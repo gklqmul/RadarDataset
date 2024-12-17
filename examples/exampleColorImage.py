@@ -22,10 +22,10 @@ if __name__ == "__main__":
 		capture = device.update()
 
 		# Get the color image from the capture
-		ret, color_image = capture.get_color_image()
-
-		if not ret:
-			continue
+		color_image = capture.get_color_image()
+	
+		# if not ret:
+		# 	continue
 			
 		# Plot the image
 		cv2.imshow("Color Image",color_image)

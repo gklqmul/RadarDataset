@@ -1,4 +1,5 @@
 import cv2
+import numpy as np
 
 import pykinect_azure as pykinect
 
@@ -26,7 +27,9 @@ if __name__ == "__main__":
 
 		if not ret:
 			continue
-			
+		print(f"Type of depth_image: {type(depth_image)}")
+		print(f"Content of depth_image: {depth_image}")
+		print('none zero', np.count_nonzero(depth_image))	
 		# Plot the image
 		cv2.imshow('Depth Image',depth_image)
 		

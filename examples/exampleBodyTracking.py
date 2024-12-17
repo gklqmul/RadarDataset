@@ -8,20 +8,22 @@ if __name__ == "__main__":
 	pykinect.initialize_libraries(track_body=True)
 
 	# Modify camera configuration
+	# device_config = pykinect.default_configuration
 	device_config = pykinect.default_configuration
 	device_config.color_resolution = pykinect.K4A_COLOR_RESOLUTION_OFF
-	device_config.depth_mode = pykinect.K4A_DEPTH_MODE_WFOV_2X2BINNED
+	device_config.depth_mode = pykinect.K4A_DEPTH_MODE_NFOV_2X2BINNED #change the depth mode to 2x2 binned
 	#print(device_config)
 
 	# Start device
 	device = pykinect.start_device(config=device_config)
 
 	# Start body tracker
-	tracker_config = pykinect.default_tracker_configuration
+	#tracker_config = pykinect.default_tracker_configuration
+	tracker_config = pykinect.k4abt_tracker_configuration_t()
 	tracker_config.sensor_orientation = pykinect.K4ABT_SENSOR_ORIENTATION_DEFAULT
 	tracker_config.tracker_processing_mode = pykinect.K4ABT_TRACKER_PROCESSING_MODE_GPU
 	tracker_config.gpu_device_id = 0
-	bodyTracker = pykinect.start_body_tracker(tracker_configuration=tracker_config)
+	bodyTracker = pykinect.start_body_tracker(tracker_config)
 
 	cv2.namedWindow('Depth image with skeleton',cv2.WINDOW_NORMAL)
 	while True:
@@ -46,7 +48,20 @@ if __name__ == "__main__":
 
 		# Draw the skeletons
 		combined_image = body_frame.draw_bodies(combined_image)
+	
+		# get body
+		bodies = body_frame.get_bodies()
 
+		# walk through each body
+		for body in bodies:
+			joints = body.joints
+			for joint in joints:
+				# get joint position
+				x, y, z = joint.position.x, joint.position.y, joint.position.z
+				print(f"Joint: {joint.id}, Position: ({x}, {y}, {z})")
+
+		# draw body index
+		combined_image = body_frame.draw_bodies(combined_image)
 		# Overlay body segmentation on depth image
 		cv2.imshow('Depth image with skeleton',combined_image)
 
