@@ -2,19 +2,18 @@ import cv2
 import numpy as np
 import pykinect_azure as pykinect
 from pykinect_azure import K4A_CALIBRATION_TYPE_COLOR, K4A_CALIBRATION_TYPE_DEPTH, k4a_float2_t
+import time
 
-def capture_center_point_3d(device, color_image, transformed_depth_image, center_x, center_y):
-    # get centre pixel depth
-    rgb_depth = transformed_depth_image[center_y, center_x]
-
-    # create a k4a_float2_t object with the center pixel coordinates
-    pixels = k4a_float2_t((center_x, center_y))
-
-    # 2D to 3D conversion
-    pos3d_color = device.calibration.convert_2d_to_3d(pixels, rgb_depth, K4A_CALIBRATION_TYPE_COLOR, K4A_CALIBRATION_TYPE_COLOR)
-    pos3d_depth = device.calibration.convert_2d_to_3d(pixels, rgb_depth, K4A_CALIBRATION_TYPE_COLOR, K4A_CALIBRATION_TYPE_DEPTH)
-
-    return pos3d_color, pos3d_depth
+def capture_vertex_points_3d(device, transformed_depth_image, vertices):
+    vertex_points_3d = []
+    for vertex in vertices:
+        x, y = vertex[0]
+        rgb_depth = transformed_depth_image[y, x]
+        pixels = k4a_float2_t((x, y))
+        pos3d_color = device.calibration.convert_2d_to_3d(pixels, rgb_depth, K4A_CALIBRATION_TYPE_COLOR, K4A_CALIBRATION_TYPE_COLOR)
+        pos3d_depth = device.calibration.convert_2d_to_3d(pixels, rgb_depth, K4A_CALIBRATION_TYPE_COLOR, K4A_CALIBRATION_TYPE_DEPTH)
+        vertex_points_3d.append((pos3d_color, pos3d_depth))
+    return vertex_points_3d
 
 if __name__ == "__main__":
     # Initialize the library, if the library is not found, add the library path as argument
@@ -31,6 +30,11 @@ if __name__ == "__main__":
     device = pykinect.start_device(config=device_config)
 
     cv2.namedWindow('Transformed Color Image', cv2.WINDOW_NORMAL)
+    all_data = []
+
+    # Record the start time
+    start_time = time.time()
+
     while True:
         # Get capture
         capture = device.update()
@@ -44,40 +48,74 @@ if __name__ == "__main__":
         if not ret_color or not ret_depth:
             continue
 
-        # Convert color image to HSV
-        hsv_image = cv2.cvtColor(color_image, cv2.COLOR_BGRA2BGR)
-        hsv_image = cv2.cvtColor(hsv_image, cv2.COLOR_BGR2HSV)
+        # Get current timestamp
+        timestamp = time.time()
 
-        # Define the range for white color in HSV
-        lower_white = np.array([0, 0, 200])
-        upper_white = np.array([180, 30, 255])
+        # Convert color image to grayscale
+        gray_image = cv2.cvtColor(color_image, cv2.COLOR_BGRA2GRAY)
 
-        # Threshold the HSV image to get only white colors
-        mask = cv2.inRange(hsv_image, lower_white, upper_white)
+        # Apply Gaussian blur to the grayscale image
+        blurred_image = cv2.GaussianBlur(gray_image, (5, 5), 0)
+
+        # Use Canny edge detector to detect edges
+        edges = cv2.Canny(blurred_image, 50, 150)
 
         # Find contours
-        contours, _ = cv2.findContours(mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+        contours, _ = cv2.findContours(edges, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
 
-        if contours:
-            # Find the largest contour which is likely to be the whiteboard
-            largest_contour = max(contours, key=cv2.contourArea)
-            x, y, w, h = cv2.boundingRect(largest_contour)
-            center_x = x + w // 2
-            center_y = y + h // 2
+        closest_triangle = None
+        min_depth = float('inf')
 
-            # Draw the bounding box and center point on the color image
-            cv2.rectangle(color_image, (x, y), (x + w, y + h), (0, 255, 0), 2)
-            cv2.circle(color_image, (center_x, center_y), 5, (0, 0, 255), -1)
+        for contour in contours:
+            # Approximate the contour to a polygon
+            epsilon = 0.04 * cv2.arcLength(contour, True)
+            approx = cv2.approxPolyDP(contour, epsilon, True)
 
-            # Capture the center point 3D coordinates
-            pos3d_color, pos3d_depth = capture_center_point_3d(device, color_image, transformed_depth_image, center_x, center_y)
-            print(f"Center Point 3D (Color): {pos3d_color}, Center Point 3D (Depth): {pos3d_depth}")
+            # Check if the approximated contour has 3 vertices (triangle)
+            if len(approx) == 3:
+                # Calculate the area of the triangle
+                area = cv2.contourArea(contour)
+                if area < 1000:  # Ignore small triangles
+                    continue
 
-        # Display the color image with bounding box and center point
+                # Capture the vertices 3D coordinates
+                vertices_3d = capture_vertex_points_3d(device, transformed_depth_image, approx)
+
+                # Check if this triangle is the closest one
+                depth = min([vertex[1].xyz.z for vertex in vertices_3d])  # Use the minimum depth of the vertices
+                if depth < min_depth:
+                    min_depth = depth
+                    closest_triangle = (approx, vertices_3d)
+
+        if closest_triangle:
+            approx, vertices_3d = closest_triangle
+
+            # Draw the bounding box and vertices on the color image
+            cv2.drawContours(color_image, [approx], -1, (0, 255, 0), 2)
+            for vertex in approx:
+                x, y = vertex[0]
+                cv2.circle(color_image, (x, y), 5, (0, 0, 255), -1)
+
+            # Print the 3D coordinates of the vertices
+            frame_data = [timestamp]
+            for i, (pos3d_color, pos3d_depth) in enumerate(vertices_3d):
+                print(f"Vertex {i} 3D (Color): ({pos3d_color.xyz.x}, {pos3d_color.xyz.y}, {pos3d_color.xyz.z}), Vertex {i} 3D (Depth): ({pos3d_depth.xyz.x}, {pos3d_depth.xyz.y}, {pos3d_depth.xyz.z})")
+                frame_data.extend([pos3d_color.xyz.x, pos3d_color.xyz.y, pos3d_color.xyz.z, pos3d_depth.xyz.x, pos3d_depth.xyz.y, pos3d_depth.xyz.z])
+
+            all_data.append(frame_data)
+
+        # Display the color image with bounding box and vertices
         cv2.imshow('Transformed Color Image', color_image)
+
+        # Check if 20 seconds have passed
+        if time.time() - start_time > 20:
+            break
 
         # Press q key to stop
         if cv2.waitKey(1) == ord('q'):
             break
+
+    # Save the data to a NumPy file
+    # np.save('triangle_vertices_data.npy', np.array(all_data))
 
     cv2.destroyAllWindows()

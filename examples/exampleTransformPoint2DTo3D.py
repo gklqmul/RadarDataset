@@ -3,6 +3,7 @@ import cv2
 import pykinect_azure as pykinect
 from pykinect_azure import K4A_CALIBRATION_TYPE_COLOR, K4A_CALIBRATION_TYPE_DEPTH, k4a_float2_t
 
+
 if __name__ == "__main__":
 
 	# Initialize the library, if the library is not found, add the library path as argument
