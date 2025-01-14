@@ -14,6 +14,7 @@ if __name__ == "__main__":
     # print(device_config)
 
     # Start device
+    # video_filename = "output.mkv"
     device = pykinect.start_device(config=device_config)
 
 	# Start body tracker
@@ -41,6 +42,7 @@ if __name__ == "__main__":
 
 		# Get the colored body segmentation
         ret_color, body_image_color = body_frame.get_segmentation_image()
+
         if not ret_depth or not ret_color:
             continue
 			
@@ -68,6 +70,7 @@ if __name__ == "__main__":
 
         # Draw body index
         combined_image = body_frame.draw_bodies(combined_image)
+
         # Overlay body segmentation on depth image
         cv2.imshow('Depth image with skeleton', combined_image)
 
@@ -81,5 +84,3 @@ if __name__ == "__main__":
 
     # Save the joint data to a NumPy file
     np.save('joint_positions.npy', np.array(all_joint_data))
-
-    cv2.destroyAllWindows()

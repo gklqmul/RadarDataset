@@ -26,7 +26,7 @@ if __name__ == "__main__":
 
 		# Get the color depth image from the capture
 		ret, depth_image = capture.get_colored_depth_image()
-
+		print("Depth Image Shape: ", depth_image)
 		if not ret:
 			continue
 			

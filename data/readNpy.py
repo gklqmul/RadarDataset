@@ -21,6 +21,29 @@ def calculate_central_point(vertices_3d):
 
     return central_x, central_y, central_depth
 
+# def calculate_central_point(vertices_3d):
+#     # 提取 y 坐标和 x 坐标
+#     y_coords = [vertex[0].xyz.y for vertex in vertices_3d if vertex[0] is not None]
+#     x_coords = [vertex[0].xyz.x for vertex in vertices_3d if vertex[0] is not None]
+#     depths = [vertex[0].xyz.z for vertex in vertices_3d if vertex[0] is not None]
+
+#     if len(y_coords) < 2 or len(x_coords) < 2 or len(depths) < 1:
+#         return None, None, None
+
+#     # 找到 y 轴上最接近的两个点
+#     sorted_indices = np.argsort(y_coords)
+#     nearest_indices = sorted_indices[:2]
+
+#     # 计算中心点的 x 坐标
+#     central_x = (x_coords[nearest_indices[0]] + x_coords[nearest_indices[1]]) / 2
+
+#     # 使用这两个点的 y 坐标作为中心点的 y 坐标
+#     central_y = y_coords[nearest_indices[0]]
+
+#     # 使用三个点中最深的点的深度作为中心点的深度
+#     central_depth = max(depths)
+
+#     return central_x, central_y, central_depth
 
 data = np.load('triangle_vertices_data.npy')
 

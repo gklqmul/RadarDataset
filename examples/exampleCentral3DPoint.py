@@ -15,6 +15,30 @@ def capture_vertex_points_3d(device, transformed_depth_image, vertices):
         vertex_points_3d.append((pos3d_color, pos3d_depth))
     return vertex_points_3d
 
+def calculate_central_point(vertices_3d):
+    # 提取 y 坐标和 x 坐标
+    y_coords = [vertex[0].xyz.y for vertex in vertices_3d if vertex[0] is not None]
+    x_coords = [vertex[0].xyz.x for vertex in vertices_3d if vertex[0] is not None]
+    depths = [vertex[0].xyz.z for vertex in vertices_3d if vertex[0] is not None]
+
+    if len(y_coords) < 2 or len(x_coords) < 2 or len(depths) < 1:
+        return None, None, None
+
+    # 找到 y 轴上最接近的两个点
+    sorted_indices = np.argsort(y_coords)
+    nearest_indices = sorted_indices[:2]
+
+    # 计算中心点的 x 坐标
+    central_x = (x_coords[nearest_indices[0]] + x_coords[nearest_indices[1]]) / 2
+
+    # 使用这两个点的 y 坐标作为中心点的 y 坐标
+    central_y = y_coords[nearest_indices[0]]
+
+    # 使用三个点中最深的点的深度作为中心点的深度
+    central_depth = max(depths)
+
+    return central_x, central_y, central_depth
+
 if __name__ == "__main__":
     # Initialize the library, if the library is not found, add the library path as argument
     pykinect.initialize_libraries()
@@ -77,7 +101,8 @@ if __name__ == "__main__":
                 area = cv2.contourArea(contour)
                 if area < 1000:  # Ignore small triangles
                     continue
-
+                
+                
                 # Capture the vertices 3D coordinates
                 vertices_3d = capture_vertex_points_3d(device, transformed_depth_image, approx)
 
@@ -95,13 +120,16 @@ if __name__ == "__main__":
             for vertex in approx:
                 x, y = vertex[0]
                 cv2.circle(color_image, (x, y), 5, (0, 0, 255), -1)
+            
+            # Calculate the central point
+            central_x, central_y, central_depth = calculate_central_point(vertices_3d)
 
             # Print the 3D coordinates of the vertices
             frame_data = [timestamp]
             for i, (pos3d_color, pos3d_depth) in enumerate(vertices_3d):
                 print(f"Vertex {i} 3D (Color): ({pos3d_color.xyz.x}, {pos3d_color.xyz.y}, {pos3d_color.xyz.z}), Vertex {i} 3D (Depth): ({pos3d_depth.xyz.x}, {pos3d_depth.xyz.y}, {pos3d_depth.xyz.z})")
                 frame_data.extend([pos3d_color.xyz.x, pos3d_color.xyz.y, pos3d_color.xyz.z, pos3d_depth.xyz.x, pos3d_depth.xyz.y, pos3d_depth.xyz.z])
-
+            print(f"Central Point 3D: ({central_x}, {central_y}, {central_depth})")
             all_data.append(frame_data)
 
         # Display the color image with bounding box and vertices
@@ -116,6 +144,6 @@ if __name__ == "__main__":
             break
 
     # Save the data to a NumPy file
-    # np.save('triangle_vertices_data.npy', np.array(all_data))
+    np.save('triangle_vertices_data1.5v2.npy', np.array(all_data))
 
     cv2.destroyAllWindows()
