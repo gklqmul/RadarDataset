@@ -1,0 +1,21 @@
+pc(end)
+for i=1:length(pc)
+
+for j=1:length(pc(i).X)
+pts(i,1)=pc(i).X(j);
+pts(i,2)=pc(i).Y(j);
+pts(i,3)=pc(i).Z(j);
+
+idx=dbscan(pts,0.5,20);
+length(idx);
+% depend on how many cluster
+pts1=pts(idx==1,:);
+pts2=pts(idx==2,:);
+figure
+scatter3(pts(:,1),pts1(:,2),pts1(:,3),'r');
+hold on
+scatter3(pts2(:,1),pts2(:,2),pts2(:,3),'green');
+xlim([-2,2])
+ylim([0,4])
+zlim([-1,1])
+mean(pts2)

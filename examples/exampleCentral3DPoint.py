@@ -101,7 +101,7 @@ if __name__ == "__main__":
                 area = cv2.contourArea(contour)
                 if area < 1000:  # Ignore small triangles
                     continue
-                
+ 
                 
                 # Capture the vertices 3D coordinates
                 vertices_3d = capture_vertex_points_3d(device, transformed_depth_image, approx)
@@ -144,6 +144,6 @@ if __name__ == "__main__":
             break
 
     # Save the data to a NumPy file
-    np.save('triangle_vertices_data1.5v2.npy', np.array(all_data))
+    # np.save('central_point2mv5.npy', np.array(all_data))
 
     cv2.destroyAllWindows()

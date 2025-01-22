@@ -29,7 +29,7 @@ if __name__ == "__main__":
 
     # Record the start time
     start_time = time.time()
-
+    print('start time kinect', start_time)
     while True:
         # Get capture
         capture = device.update()
@@ -62,7 +62,7 @@ if __name__ == "__main__":
                 # Get joint position
                 x, y, z = joint.position.x, joint.position.y, joint.position.z
                 joint_id = joint.id
-                print(f"Joint: {joint_id}, Position: ({x}, {y}, {z})")
+               # print(f"Joint: {joint_id}, Position: ({x}, {y}, {z})")
 
                 # Save joint data
                 joint_data = [joint_id, x, y, z]
@@ -75,7 +75,7 @@ if __name__ == "__main__":
         cv2.imshow('Depth image with skeleton', combined_image)
 
         # Check if 20 seconds have passed
-        if time.time() - start_time > 20:
+        if time.time() - start_time > 5:
             break
 
         # Press q key to stop
@@ -83,4 +83,4 @@ if __name__ == "__main__":
             break
 
     # Save the joint data to a NumPy file
-    np.save('joint_positions.npy', np.array(all_joint_data))
+    # np.save('joint_positions.npy', np.array(all_joint_data))
