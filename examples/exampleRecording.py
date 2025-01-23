@@ -1,5 +1,5 @@
 import cv2
-
+import time
 import pykinect_azure as pykinect
 
 if __name__ == "__main__":
@@ -11,15 +11,16 @@ if __name__ == "__main__":
 	device_config = pykinect.default_configuration
 	device_config.color_format = pykinect.K4A_IMAGE_FORMAT_COLOR_BGRA32
 	device_config.color_resolution = pykinect.K4A_COLOR_RESOLUTION_1080P
-	device_config.depth_mode = pykinect.K4A_DEPTH_MODE_WFOV_2X2BINNED
+	device_config.depth_mode = pykinect.K4A_DEPTH_MODE_NFOV_2X2BINNED
 	#print(device_config)
 
 	# Start device
-	video_filename = "output7.mkv"
+	video_filename = "output.mkv"
 	device = pykinect.start_device(config=device_config, record=True, record_filepath=video_filename)
 
 	cv2.namedWindow('Depth Image',cv2.WINDOW_NORMAL)
-
+	    # Record the start time
+	start_time = time.time()
 	while True:
 
 		# Get capture
@@ -27,7 +28,7 @@ if __name__ == "__main__":
 
 		# Get the color depth image from the capture
 		ret, depth_image = capture.get_colored_depth_image()
-		print("Depth Image Shape: ", depth_image)
+		
 		if not ret:
 			continue
 			
@@ -35,5 +36,5 @@ if __name__ == "__main__":
 		cv2.imshow('Depth Image',depth_image)
 		
 		# Press q key to stop
-		if cv2.waitKey(1) == ord('q'):  
+		if time.time()-start_time > 20:  
 			break

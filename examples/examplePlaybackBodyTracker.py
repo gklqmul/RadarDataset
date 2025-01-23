@@ -36,21 +36,17 @@ if __name__ == "__main__":
 		if not ret or capture is None:
 			print("Invalid capture.")
 			break
-
+		body_frame = bodyTracker.update(capture=capture)	
 		# Get color image
 		ret_color, color_image = capture.get_transformed_color_image()
 
 		# Get the colored depth
 		ret_depth, depth_color_image = capture.get_colored_depth_image()
-
-
 		
-		if not ret_color or not ret_depth:
-			continue
-
-		body_frame = bodyTracker.update(capture=capture)	
 		# Get the colored body segmentation
 		ret_seg, body_image_color = body_frame.get_segmentation_image()
+		if not ret_color or not ret_depth or not ret_seg:
+			continue
 		
 		# Combine both images
 		combined_image = cv2.addWeighted(depth_color_image, 0.6, body_image_color, 0.4, 0)
@@ -79,8 +75,6 @@ if __name__ == "__main__":
 		cv2.imshow('Depth image with skeleton',combined_image)
 		        # Check if 20 seconds have passed
 
-		if time.time() - start_time > 20:
-			break
 
 		# Press q key to stop
 		if cv2.waitKey(1) == ord('q'):
