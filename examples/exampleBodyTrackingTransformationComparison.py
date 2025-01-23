@@ -4,31 +4,50 @@ import pykinect_azure as pykinect
 
 if __name__ == "__main__":
 
-	# Initialize the library, if the library is not found, add the library path as argument
+	# # Initialize the library, if the library is not found, add the library path as argument
+	# pykinect.initialize_libraries(track_body=True)
+	video_filename = "output3.mkv"
+
+    # Initialize the library, if the library is not found, add the library path as argument
 	pykinect.initialize_libraries(track_body=True)
 
-	# Modify camera configuration
-	device_config = pykinect.default_configuration
-	device_config.color_resolution = pykinect.K4A_COLOR_RESOLUTION_1080P
-	device_config.color_format = pykinect.K4A_IMAGE_FORMAT_COLOR_BGRA32
-	device_config.depth_mode = pykinect.K4A_DEPTH_MODE_WFOV_2X2BINNED
-	#print(device_config)
+	# # Modify camera configuration
+	# device_config = pykinect.default_configuration
+	# device_config.color_resolution = pykinect.K4A_COLOR_RESOLUTION_1080P
+	# device_config.color_format = pykinect.K4A_IMAGE_FORMAT_COLOR_BGRA32
+	# device_config.depth_mode = pykinect.K4A_DEPTH_MODE_NFOV_2X2BINNED
+	# #print(device_config)
 
-	# Start device
-	device = pykinect.start_device(config=device_config)
+	# # Start device
+	# device = pykinect.start_device(config=device_config)
 
+	# # Start body tracker
+	# bodyTracker = pykinect.start_body_tracker()
+
+	    # Start playback
+	device = pykinect.start_playback(video_filename)
+
+	playback_config = device.get_record_configuration()
+	playback_calibration = device.get_calibration()
+    # print(playback_config)
 	# Start body tracker
-	bodyTracker = pykinect.start_body_tracker()
+	bodyTracker = pykinect.start_body_tracker(calibration=playback_calibration)
 
 	cv2.namedWindow('Color image with skeleton',cv2.WINDOW_NORMAL)
 	cv2.namedWindow('Transformed Color image with skeleton',cv2.WINDOW_NORMAL)
 	while True:
 		
 		# Get capture
-		capture = device.update()
+		# capture = device.update()
 
-		# Get body tracker frame
-		body_frame = bodyTracker.update()
+		# # Get body tracker frame
+		# body_frame = bodyTracker.update()
+# Get camera capture
+		ret, capture = device.update()
+
+		if not ret or capture is None:
+			print("Invalid capture.")
+			break
 
 		# Get the color image
 		ret_color, color_image = capture.get_color_image()
@@ -36,6 +55,9 @@ if __name__ == "__main__":
 		# Get the depth image
 		ret_depth, depth_image = capture.get_depth_image()
 
+		if not ret_color or not ret_depth:
+			continue
+		body_frame = bodyTracker.update(capture=capture)	
 		# Get the transformed color image
 		ret_transformed_color, transformed_color_image = capture.get_transformed_color_image()
 
