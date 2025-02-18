@@ -1,10 +1,11 @@
 import cv2
 import time
+import numpy as np
 import pykinect_azure as pykinect
 
 if __name__ == "__main__":
 
-	video_filename = "output3.mkv"
+	video_filename = "yxstable.mkv"
 
 	# Initialize the library, if the library is not found, add the library path as argument
 	pykinect.initialize_libraries(track_body=True)
@@ -13,7 +14,7 @@ if __name__ == "__main__":
 	playback = pykinect.start_playback(video_filename)
 
 	playback_config = playback.get_record_configuration()
-	# print(playback_config)
+	print(playback_config)
 
 	playback_calibration = playback.get_calibration()
 
@@ -27,36 +28,39 @@ if __name__ == "__main__":
     # Record the start time
 	start_time = time.time()
 	print('start time kinect', start_time)
-
+	frame = 0
 	while True:
-
+		frame += 1
 		# Get camera capture
 		ret, capture = playback.update()
 
 		if not ret or capture is None:
 			print("Invalid capture.")
 			break
-		body_frame = bodyTracker.update(capture=capture)	
+		
 		# Get color image
 		ret_color, color_image = capture.get_transformed_color_image()
 
 		# Get the colored depth
 		ret_depth, depth_color_image = capture.get_colored_depth_image()
+
+		ret, ir_image = capture.get_ir_image()
 		
-		# Get the colored body segmentation
-		ret_seg, body_image_color = body_frame.get_segmentation_image()
-		if not ret_color or not ret_depth or not ret_seg:
+		if not ret_color or not ret_depth:
 			continue
 		
+		body_frame = bodyTracker.update(capture=capture)
+		# Get the colored body segmentation
+		ret_seg, body_image_color = body_frame.get_segmentation_image()
 		# Combine both images
 		combined_image = cv2.addWeighted(depth_color_image, 0.6, body_image_color, 0.4, 0)
 		combined_image = cv2.addWeighted(color_image[:, :, :3], 0.7, combined_image, 0.3, 0)
 
 		# Draw the skeletons
-		combined_image = body_frame.draw_bodies(combined_image)
+		combined_image = body_frame.draw_bodies(depth_color_image)
         # Get bodies
 		bodies = body_frame.get_bodies()
-
+		framedata = []
 		# Walk through each body
 		for body in bodies:
 			joints = body.joints
@@ -64,18 +68,22 @@ if __name__ == "__main__":
                 # Get joint position
 				x, y, z = joint.position.x, joint.position.y, joint.position.z
 				joint_id = joint.id
-				print(f"Joint: {joint_id}, Position: ({x}, {y}, {z})")
-
+				# print(f"Joint: {joint_id}, Position: ({x}, {y}, {z})")
                 # Save joint data
-				joint_data = [joint_id, x, y, z]
-				all_joint_data.append(joint_data)
+				joint_data = [x, y, z]
+				framedata.append(joint_data)
 				# Draw the skeletons
+		all_joint_data.append(framedata)
 		combined_image = body_frame.draw_bodies(combined_image)
 		# Overlay body segmentation on depth image
 		cv2.imshow('Depth image with skeleton',combined_image)
 		        # Check if 20 seconds have passed
-
+ 
 
 		# Press q key to stop
 		if cv2.waitKey(1) == ord('q'):
 			break
+
+	print('frame', frame)	
+	 # Save the joint data to a NumPy file
+	np.save('joint_positions18.npy', np.array(all_joint_data))

@@ -25,14 +25,15 @@ def calculate_central_point(vertices_3d):
         return None, None, None
 
     # 找到 y 轴上最接近的两个点
-    sorted_indices = np.argsort(y_coords)
-    nearest_indices = sorted_indices[:2]
+    sorted_y_indices = np.argsort(y_coords)
+    nearest_y_indices = sorted_y_indices[:2]
 
-    # 计算中心点的 x 坐标
-    central_x = (x_coords[nearest_indices[0]] + x_coords[nearest_indices[1]]) / 2
+     # 计算中心点的 Y 坐标
+    central_y = (y_coords[nearest_y_indices[0]] + y_coords[nearest_y_indices[1]]) / 2
 
-    # 使用这两个点的 y 坐标作为中心点的 y 坐标
-    central_y = y_coords[nearest_indices[0]]
+    # 找到 x 轴上中间的那个点
+    sorted_x_indices = np.argsort(x_coords)
+    central_x = x_coords[sorted_x_indices[1]]  # 中间的那个点
 
     # 使用三个点中最深的点的深度作为中心点的深度
     central_depth = max(depths)
@@ -41,28 +42,44 @@ def calculate_central_point(vertices_3d):
 
 if __name__ == "__main__":
     # Initialize the library, if the library is not found, add the library path as argument
+#     pykinect.initialize_libraries()
+
+#     # Modify camera configuration
+#     device_config = pykinect.default_configuration
+#     device_config.color_format = pykinect.K4A_IMAGE_FORMAT_COLOR_BGRA32
+#     device_config.color_resolution = pykinect.K4A_COLOR_RESOLUTION_720P
+#     device_config.depth_mode = pykinect.K4A_DEPTH_MODE_WFOV_2X2BINNED
+#     # print(device_config)
+
+#    # Start device
+#     timestamp = int(time.time())  # 获取当前时间戳（秒）
+#     video_filename = f"{timestamp}.mkv"  # 生成文件名
+
+#     device = pykinect.start_device(config=device_config, record=True, record_filepath=video_filename)
+    video_filename = "1739292462.mkv"
+
+    # Initialize the library, if the library is not found, add the library path as argument
     pykinect.initialize_libraries()
 
-    # Modify camera configuration
-    device_config = pykinect.default_configuration
-    device_config.color_format = pykinect.K4A_IMAGE_FORMAT_COLOR_BGRA32
-    device_config.color_resolution = pykinect.K4A_COLOR_RESOLUTION_720P
-    device_config.depth_mode = pykinect.K4A_DEPTH_MODE_WFOV_2X2BINNED
-    # print(device_config)
+    # Start playback
+    playback = pykinect.start_playback(video_filename)
 
-    # Start device
-    device = pykinect.start_device(config=device_config)
+    playback_config = playback.get_record_configuration()
+    print(playback_config)
 
-    cv2.namedWindow('Transformed Color Image', cv2.WINDOW_NORMAL)
-    all_data = []
+    cv2.namedWindow('color Image',cv2.WINDOW_NORMAL)
+    
 
     # Record the start time
     start_time = time.time()
 
     while True:
         # Get capture
-        capture = device.update()
+        ret, capture = playback.update()
 
+        if not ret:
+            break
+        
         # Get the color image from the capture
         ret_color, color_image = capture.get_color_image()
 
@@ -104,7 +121,7 @@ if __name__ == "__main__":
  
                 
                 # Capture the vertices 3D coordinates
-                vertices_3d = capture_vertex_points_3d(device, transformed_depth_image, approx)
+                vertices_3d = capture_vertex_points_3d(playback, transformed_depth_image, approx)
 
                 # Check if this triangle is the closest one
                 depth = min([vertex[1].xyz.z for vertex in vertices_3d])  # Use the minimum depth of the vertices
@@ -130,20 +147,17 @@ if __name__ == "__main__":
                 print(f"Vertex {i} 3D (Color): ({pos3d_color.xyz.x}, {pos3d_color.xyz.y}, {pos3d_color.xyz.z}), Vertex {i} 3D (Depth): ({pos3d_depth.xyz.x}, {pos3d_depth.xyz.y}, {pos3d_depth.xyz.z})")
                 frame_data.extend([pos3d_color.xyz.x, pos3d_color.xyz.y, pos3d_color.xyz.z, pos3d_depth.xyz.x, pos3d_depth.xyz.y, pos3d_depth.xyz.z])
             print(f"Central Point 3D: ({central_x}, {central_y}, {central_depth})")
-            all_data.append(frame_data)
+
 
         # Display the color image with bounding box and vertices
         cv2.imshow('Transformed Color Image', color_image)
 
         # Check if 20 seconds have passed
-        if time.time() - start_time > 20:
-            break
+        # if time.time() - start_time > 20:
+        #     break
 
-        # Press q key to stop
-        if cv2.waitKey(1) == ord('q'):
-            break
-
-    # Save the data to a NumPy file
-    # np.save('central_point2mv5.npy', np.array(all_data))
+        # # Press q key to stop
+        # if cv2.waitKey(1) == ord('q'):
+        #     break
 
     cv2.destroyAllWindows()

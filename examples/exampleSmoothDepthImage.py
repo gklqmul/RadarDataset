@@ -8,21 +8,26 @@ if __name__ == "__main__":
 	# Initialize the library, if the library is not found, add the library path as argument
 	pykinect.initialize_libraries()
 
-	# Modify camera configuration
-	device_config = pykinect.default_configuration
-	device_config.color_resolution = pykinect.K4A_COLOR_RESOLUTION_1080P
-	device_config.depth_mode = pykinect.K4A_DEPTH_MODE_WFOV_2X2BINNED
-	#print(device_config)
+	# # Modify camera configuration
+	# device_config = pykinect.default_configuration
+	# device_config.color_resolution = pykinect.K4A_COLOR_RESOLUTION_1080P
+	# device_config.depth_mode = pykinect.K4A_DEPTH_MODE_WFOV_2X2BINNED
+	# #print(device_config)
 
-	# Start device
-	device = pykinect.start_device(config=device_config)
+	# # Start device
+	# device = pykinect.start_device(config=device_config)
+	video_filename = "10.mkv"
+	# Start playback
+	playback = pykinect.start_playback(video_filename)
+
+	playback_config = playback.get_record_configuration()
 
 	cv2.namedWindow('Smoothed Depth Comparison',cv2.WINDOW_NORMAL)
 	while True:
 		
 		# Get capture
-		capture = device.update()
-
+		# capture = device.update()
+		ret, capture = playback.update()
 		# Get the color depth image from the capture
 		ret, raw_depth_image = capture.get_colored_depth_image()
 

@@ -6,7 +6,7 @@ if __name__ == "__main__":
 
 	# # Initialize the library, if the library is not found, add the library path as argument
 	# pykinect.initialize_libraries(track_body=True)
-	video_filename = "output3.mkv"
+	video_filename = "yxstable.mkv"
 
     # Initialize the library, if the library is not found, add the library path as argument
 	pykinect.initialize_libraries(track_body=True)
@@ -48,7 +48,7 @@ if __name__ == "__main__":
 		if not ret or capture is None:
 			print("Invalid capture.")
 			break
-
+		body_frame = bodyTracker.update(capture=capture)	
 		# Get the color image
 		ret_color, color_image = capture.get_color_image()
 
@@ -57,38 +57,41 @@ if __name__ == "__main__":
 
 		if not ret_color or not ret_depth:
 			continue
-		body_frame = bodyTracker.update(capture=capture)	
+		
 		# Get the transformed color image
 		ret_transformed_color, transformed_color_image = capture.get_transformed_color_image()
 
-		# Get the point cloud
+		# Get the point cloud from depth image
 		ret_point, points = capture.get_pointcloud()
 
-		# Get the transformed point cloud
+		# Get the transformed point cloud to color camera
 		ret_transformed_point, transformed_points = capture.get_transformed_pointcloud()
 
 		if not ret_color or not ret_depth or not ret_point or not ret_transformed_point or not ret_transformed_color:
 			continue
-
+		
+		# adjust shape same with rgb image
 		points_map = points.reshape((transformed_color_image.shape[0], transformed_color_image.shape[1], 3))
 		transformed_points_map = transformed_points.reshape((color_image.shape[0], color_image.shape[1], 3))
 
 		for body_id in range(body_frame.get_num_bodies()):
+			# get skeleton 2d in rgb, depth and skeleton 3d
 			color_skeleton_2d = body_frame.get_body2d(body_id, pykinect.K4A_CALIBRATION_TYPE_COLOR).numpy()
 			depth_skeleton_2d = body_frame.get_body2d(body_id, pykinect.K4A_CALIBRATION_TYPE_DEPTH).numpy()
 			skeleton_3d = body_frame.get_body(body_id).numpy()
 
-			color_neck_2d = color_skeleton_2d[pykinect.K4ABT_JOINT_NECK,:]
-			depth_neck_2d = depth_skeleton_2d[pykinect.K4ABT_JOINT_NECK,:]
-
+			color_neck_2d = color_skeleton_2d[pykinect.K4ABT_JOINT_SHOULDER_LEFT,:]
+			depth_neck_2d = depth_skeleton_2d[pykinect.K4ABT_JOINT_SHOULDER_LEFT,:]
+			# (u,v)+depth -> 3d
 			depth_neck_float2 = pykinect.k4a_float2_t(depth_neck_2d)
 			depth = depth_image[int(depth_neck_2d[1]), int(depth_neck_2d[0])]
 			depth_neck_float3 = device.calibration.convert_2d_to_3d(depth_neck_float2, depth, pykinect.K4A_CALIBRATION_TYPE_DEPTH, pykinect.K4A_CALIBRATION_TYPE_DEPTH)
 			depth_transformed_neck_3d = [depth_neck_float3.xyz.x, depth_neck_float3.xyz.y, depth_neck_float3.xyz.z]
-
+			# firstly point cloud -> 3d, point cloud is based on depth image, so rgb need transformation
 			color_neck_3d = transformed_points_map[int(color_neck_2d[1]), int(color_neck_2d[0]), :]
 			depth_neck_3d = points_map[int(depth_neck_2d[1]), int(depth_neck_2d[0]), :]
-			neck_3d = skeleton_3d[pykinect.K4ABT_JOINT_NECK,:3]
+			
+			neck_3d = skeleton_3d[pykinect.K4ABT_JOINT_SHOULDER_LEFT,:3]
 			print(f'Neck 3D coordinates: color = {color_neck_3d}, depth = {depth_neck_3d}, depth converted = {depth_transformed_neck_3d}, body = {neck_3d}')
 
 

@@ -47,7 +47,7 @@ if __name__ == "__main__":
             continue
 			
 		# Combine both images
-        combined_image = cv2.addWeighted(depth_color_image, 0.6, body_image_color, 0.4, 0)
+        combined_image = cv2.addWeighted(depth_color_image, 0.6, body_image_color, 0.4, 0) #这是叠加两张图画出来
 
 		# Draw the skeletons
         combined_image = body_frame.draw_bodies(combined_image)
@@ -75,12 +75,12 @@ if __name__ == "__main__":
         cv2.imshow('Depth image with skeleton', combined_image)
 
         # Check if 20 seconds have passed
-        if time.time() - start_time > 5:
-            break
+        # if time.time() - start_time > 5:
+        #     break
 
         # Press q key to stop
         if cv2.waitKey(1) == ord('q'):
             break
 
     # Save the joint data to a NumPy file
-    # np.save('joint_positions.npy', np.array(all_joint_data))
+    np.save('joint_positions.npy', np.array(all_joint_data))

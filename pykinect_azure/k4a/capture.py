@@ -50,7 +50,7 @@ class Capture:
 	def get_ir_image_object(self):
 
 		return Image(_k4a.k4a_capture_get_ir_image(self._handle))
-
+	
 	def get_transformed_depth_object(self):
 		return self.camera_transform.depth_image_to_color_camera(self.get_depth_image_object())
 

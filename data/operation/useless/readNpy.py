@@ -23,13 +23,12 @@ def calculate_central_point(vertices_3d):
 
     return central_x, central_y, central_depth
 
-
-data = np.load('C:/PHD/pyKinectAzure/data/160125/central_point2mv5.npy')
-
 sum_x = 0
 sum_y = 0
 sum_z = 0
 count = 0 
+
+data = np.load('data/230125/exp003.npy')
 
 for frame_data in data:
     timestamp = frame_data[0]

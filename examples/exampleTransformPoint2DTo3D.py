@@ -20,6 +20,7 @@ if __name__ == "__main__":
 	device = pykinect.start_device(config=device_config)
 
 	cv2.namedWindow('Transformed Color Image',cv2.WINDOW_NORMAL)
+	
 	while True:
 		
 		# Get capture
