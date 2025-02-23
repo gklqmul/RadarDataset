@@ -1,7 +1,9 @@
 import numpy as np
+import pandas as pd
 from scipy.ndimage import gaussian_filter1d
 import matplotlib.pyplot as plt
 import os
+import pickle
 
 def save_action_segments(segments, filename="action_segments.txt"):
     """
@@ -84,6 +86,19 @@ def plot_motion_energy(motion_energy, action_segments, threshold_T, long_station
     # 保存图像
     plt.savefig(save_path, dpi=300)
     print(f"运动能量图已保存至: {save_path}")
+
+
+def transform_large_point_set(large_points_file):
+    with open('rigid_transform.pkl', 'rb') as f:
+        R, t = pickle.load(f)
+
+    large_points = pd.read_excel(large_points_file).to_numpy()
+
+    large_points[:, 0] *= -1
+    large_points[:, 2] *= -1
+    large_points[:, 2] += 9
+
+    return large_points @ R.T + t
 
 
 
