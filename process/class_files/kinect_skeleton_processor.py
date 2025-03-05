@@ -136,7 +136,7 @@ class KinectSkeletonProcessor:
             points_map = points.reshape((transformed_color_image.shape[0], transformed_color_image.shape[1], 3))
             transformed_points_map = transformed_points.reshape((color_image.shape[0], color_image.shape[1], 3))
 
-            skeletons = self.get_skeleton_data(body_frame, capture, depth_image, transformed_points_map, points_map)
+            skeletons = self.get_skeleton_data(body_frame, depth_image, transformed_points_map, points_map)
 
             if skeletons is not None:
                 # Interpolate missing joints using latest_joints

@@ -89,32 +89,29 @@ class RigidTransform:
         Plot the original and transformed point sets in 3D space to visualize alignment.
         :param P_transformed: Transformed point set
         """
-        fig, axs = plt.subplots(1, 2, subplot_kw={'projection': '3d'}, figsize=(12, 6))
-
-        # Plot original points before alignment
-        for i in range(len(self.P)):
-            axs[0].scatter(self.P[i, 0], self.P[i, 1], self.P[i, 2], c='b', label='P (Kinect)' if i == 0 else "")
-            axs[0].text(self.P[i, 0], self.P[i, 1], self.P[i, 2], str(i), color='blue')
-            axs[0].scatter(self.Q[i, 0], self.Q[i, 1], self.Q[i, 2], c='r', label='Q (Radar)' if i == 0 else "")
-            axs[0].text(self.Q[i, 0], self.Q[i, 1], self.Q[i, 2], str(i), color='red')
-        axs[0].set_title('Before Alignment')
-        axs[0].set_xlabel('X')
-        axs[0].set_ylabel('Y')
-        axs[0].set_zlabel('Z')
-        axs[0].legend()
+    # Plot original points before alignment
+        fig1 = plt.figure(figsize=(8, 6))
+        ax1 = fig1.add_subplot(111, projection='3d')
+        ax1.scatter(self.P[:, 0], self.P[:, 1], self.P[:, 2], c='#1f77b4', label='P (Kinect)')
+        ax1.scatter(self.Q[:, 0], self.Q[:, 1], self.Q[:, 2], c='#d62728', label='Q (Radar)')
+        ax1.set_title('Before Transformation', pad=50, fontsize=20)
+        ax1.set_xlabel('X', fontsize=16)
+        ax1.set_ylabel('Y', fontsize=16)
+        ax1.set_zlabel('Z', fontsize=16)
+        ax1.legend(fontsize=20)
+        plt.tight_layout()
+        plt.show()
 
         # Plot points after alignment
-        for i in range(len(P_transformed)):
-            axs[1].scatter(P_transformed[i, 0], P_transformed[i, 1], P_transformed[i, 2], c='b', label='P Transformed' if i == 0 else "")
-            axs[1].text(P_transformed[i, 0], P_transformed[i, 1], P_transformed[i, 2], str(i), color='blue')
-            axs[1].scatter(self.Q[i, 0], self.Q[i, 1], self.Q[i, 2], c='r', label='Q (Radar)' if i == 0 else "")
-            axs[1].text(self.Q[i, 0], self.Q[i, 1], self.Q[i, 2], str(i), color='red')
-        axs[1].set_title('After Alignment')
-        axs[1].set_xlabel('X')
-        axs[1].set_ylabel('Y')
-        axs[1].set_zlabel('Z')
-        axs[1].legend()
-
+        fig2 = plt.figure(figsize=(8, 6))
+        ax2 = fig2.add_subplot(111, projection='3d')
+        ax2.scatter(P_transformed[:, 0], P_transformed[:, 1], P_transformed[:, 2], c='#1f77b4', label='P (Kinect)')
+        ax2.scatter(self.Q[:, 0], self.Q[:, 1], self.Q[:, 2], c='#d62728', label='Q (Radar)')
+        ax2.set_title('After Transformation', pad=50, fontsize=20)
+        ax2.set_xlabel('X', fontsize=16)
+        ax2.set_ylabel('Y', fontsize=16)
+        ax2.set_zlabel('Z', fontsize=16)
+        ax2.legend(fontsize=20)
         plt.tight_layout()
         plt.show()
 
@@ -141,7 +138,7 @@ class RigidTransform:
 
 # Example usage
 if __name__ == "__main__":
-    file_path = "central point coordinate.xlsx"
+    file_path = "./process/process files/central point coordinate.xlsx"
     transform = RigidTransform(file_path)
     transform.run()
 

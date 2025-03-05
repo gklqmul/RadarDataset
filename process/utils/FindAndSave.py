@@ -3,6 +3,29 @@
 import numpy as np
 import matplotlib.pyplot as plt
 import os
+from pathlib import Path
+
+
+def get_aligned_mat_files(base_dir):
+    """
+    Recursively finds all .mat files in the `aligned` folders under the specified base directory.
+
+    Args:
+        base_dir (str): The base directory path, e.g., "dataset/env1/subjects/subject02/origal".
+
+    Returns:
+        list: A list of paths to all found .mat files.
+    """
+    # Convert base_dir to a Path object
+    base_dir = Path(base_dir)
+
+    # Find all .mat files in the `aligned` folders
+    mat_files = list(base_dir.glob("**/aligned/*.mat"))
+
+    # Convert Path objects to string paths
+    mat_files = [str(file) for file in mat_files]
+
+    return mat_files
 
 
 def find_files(base_dir, extension):

@@ -83,7 +83,7 @@ class DataAligner:
             print(f"Saved aligned skeleton segment: {aligned_skeleton_path}")
 
             # Save radar segment
-            radar_save_path = os.path.join(os.path.dirname(self.save_folder), f"aligned_radar_segment{segment_id:02d}.mat")
+            radar_save_path = os.path.join(self.save_folder, f"aligned_radar_segment{segment_id:02d}.mat")
             scipy.io.savemat(radar_save_path, {'radar_data': radar_segment})
             print(f"Saved aligned radar segment: {radar_save_path}")
 
