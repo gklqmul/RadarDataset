@@ -5,30 +5,19 @@ from torch.utils.data import Dataset
 from sklearn.model_selection import train_test_split
 
 class ActionDataset(Dataset):
-    """
-    Data loader for the action dataset. This class loads radar point cloud data and 3D joint ground truth,
-    aligns them by frame count, converts units, applies padding, scales data, and returns them along with action and subject labels.
-
-    Parameters:
-    - root_dir (str): Root directory containing the dataset (e.g., 'dataset').
-    - task (str): Task type - 'action_classification', 'subject_identification', or 'keypoint_estimation'.
-    - padding_mode (str): Padding mode - 'zero', 'repeat', or 'last_frame'.
-    - max_points (int): Maximum number of points per frame for radar data.
-    - scale_factor (float): Factor to scale radar and skeleton data.
-    - test_size (float): Proportion of the data for testing.
-    - val_size (float): Proportion of the data for validation.
-    """
-    def __init__(self, root_dir, task='action_classification', padding_mode='zero', max_points=512, scale_factor=1.0, test_size=0.2, val_size=0.1):
+    def __init__(self, root_dir, task='action_classification', padding_mode='zero', max_points=512, scale_factor=1.0, test_size=0.2, val_size=0.1, stack_func=None, normalize=False, standardize=False):
         self.root_dir = root_dir
         self.task = task
         self.padding_mode = padding_mode
         self.max_points = max_points
         self.scale_factor = scale_factor
+        self.stack_func = stack_func
+        self.normalize = normalize
+        self.standardize = standardize
 
         self.data = []
 
-        # Search across env1 and env2, subject01 to subject26
-        for env in ['env1', 'env2']:
+        for env in ['env1']:
             env_path = os.path.join(root_dir, env, 'subjects')
             if not os.path.exists(env_path):
                 continue
@@ -51,7 +40,6 @@ class ActionDataset(Dataset):
                         skeleton_path = os.path.join(action_path, skeleton_file[0])
                         self.data.append((radar_path, skeleton_path))
 
-        # Split the data into train, val, and test sets
         train_data, test_data = train_test_split(self.data, test_size=test_size, random_state=42)
         train_data, val_data = train_test_split(train_data, test_size=val_size / (1 - test_size), random_state=42)
 
@@ -61,9 +49,18 @@ class ActionDataset(Dataset):
             'test': test_data
         }
 
-    def scale_data(self, data):
-        """Scales the input data by the scale factor."""
-        return data * self.scale_factor
+    def scale_data(self, data, data_type='radar'):
+        if data_type == 'radar':
+            data = data * self.scale_factor
+        elif self.normalize:
+            data_min = np.min(data, axis=0)
+            data_max = np.max(data, axis=0)
+            data = (data - data_min) / (data_max - data_min + 1e-8)
+        elif self.standardize:
+            data_mean = np.mean(data, axis=0)
+            data_std = np.std(data, axis=0)
+            data = (data - data_mean) / (data_std + 1e-8)
+        return data
 
     def get_dataset(self, split='train'):
         dataset = self.datasets.get(split, [])
@@ -73,17 +70,16 @@ class ActionDataset(Dataset):
         with h5py.File(radar_path, 'r') as f:
             radar_data = np.array(f['radar_data'])
 
-        # Extract only the 2nd, 4th, 6th, and 7th attributes per point
         radar_data = radar_data[:, :, [1, 3, 5, 6]]
-
-        # Transpose each frame to shape (num_points, 4)
         radar_data = [frame.T for frame in radar_data]
 
-        # Scale and pad radar data
-        radar_data = np.array([self.pad_or_trim_points(self.scale_data(frame)) for frame in radar_data])
+        if self.stack_func:
+            radar_data = self.stack_func(radar_data)
 
-        skeleton_data = np.load(skeleton_path) / 1000.0  # Convert skeleton data from mm to meters
-        skeleton_data = self.scale_data(skeleton_data)
+        radar_data = np.array([self.pad_or_trim_points(self.scale_data(frame, 'radar')) for frame in radar_data])
+
+        skeleton_data = np.load(skeleton_path) / 1000.0
+        skeleton_data = self.scale_data(skeleton_data, 'skeleton')
 
         frame_count = min(len(radar_data), skeleton_data.shape[0])
         radar_data = radar_data[:frame_count]
@@ -121,9 +117,9 @@ class ActionDataset(Dataset):
 
         return np.concatenate([frame, padding], axis=0)
 
-# Usage example
-# dataset = ActionDataset(root_dir='dataset')
-# train_data = dataset.get_dataset('train')
-# val_data = dataset.get_dataset('val')
-# test_data = dataset.get_dataset('test')
-# print(train_data[0])
+
+if __name__ == "__main__":
+    dataset = ActionDataset(root_dir='dataset', task='action_classification', scale_factor=1.5)
+    train_data = dataset.get_dataset('train')
+    print(f"Training samples: {len(train_data)}")
+    print(f"Example sample: {train_data[0]}")
