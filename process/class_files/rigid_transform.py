@@ -100,6 +100,7 @@ class RigidTransform:
         ax1.set_zlabel('Z', fontsize=16)
         ax1.legend(fontsize=20)
         plt.tight_layout()
+        plt.savefig('before.png', dpi=300)  # Save high-resolution image
         plt.show()
 
         # Plot points after alignment
@@ -113,6 +114,7 @@ class RigidTransform:
         ax2.set_zlabel('Z', fontsize=16)
         ax2.legend(fontsize=20)
         plt.tight_layout()
+        plt.savefig('after.png', dpi=300)  # Save high-resolution image
         plt.show()
 
     def run(self):

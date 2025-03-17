@@ -1,9 +1,9 @@
-
-
 import numpy as np
 import matplotlib.pyplot as plt
 import os
 from pathlib import Path
+import shutil
+import re
 
 
 def get_aligned_mat_files(base_dir):
@@ -27,6 +27,62 @@ def get_aligned_mat_files(base_dir):
 
     return mat_files
 
+def move_files_to_aligned(base_path):
+    """
+    Create action folders under the 'aligned' directory and move files from 
+    the 'origal' folders directly into these action folders.
+    
+    Args: 
+        base_path: The base directory path, e.g., "dataset/env1/subjects/subject02".
+    """
+    source_base = os.path.join(base_path, "origal")
+    target_folder = os.path.join(base_path, "aligned")
+    
+    # Create the aligned folder if it doesn't exist
+    if not os.path.exists(target_folder):
+        os.makedirs(target_folder)
+    
+    new_segment_number = 1
+    
+    for folder_num in range(1, 7):
+        folder_path = os.path.join(source_base, str(folder_num), "aligned")
+        
+        if not os.path.exists(folder_path):
+            print(f"folder path: {folder_path} doesn't exist, skipping...")
+            continue
+        
+        files = [f for f in os.listdir(folder_path) if f.endswith(('.h5', '.npy'))]
+        
+        # Group files by segment number
+        segment_groups = {}
+        for file in files:
+            match = re.search(r'segment(\d+)', file)
+            if match:
+                segment_num = int(match.group(1))
+                if segment_num not in segment_groups:
+                    segment_groups[segment_num] = []
+                segment_groups[segment_num].append((os.path.join(folder_path, file), file))
+        
+        for segment_num in sorted(segment_groups.keys()):
+            # Create action folder for this segment
+            action_folder = os.path.join(target_folder, f"action{new_segment_number:02d}")
+            if not os.path.exists(action_folder):
+                os.makedirs(action_folder)
+                
+            for source_path, original_name in segment_groups[segment_num]:
+                # Create new filename with updated segment number
+                file_base = original_name.split('segment')[0]
+                ext = os.path.splitext(original_name)[1]
+                new_name = f"{file_base}segment{new_segment_number:02d}{ext}"
+                
+                # Copy file directly to the action folder
+                action_file_path = os.path.join(action_folder, new_name)
+                shutil.copy2(source_path, action_file_path)
+                print(f"copied to action folder: {source_path} -> {action_file_path}")
+            
+            new_segment_number += 1
+    
+    print(f"Processed {new_segment_number-1} segments and created {new_segment_number-1} action folders")
 
 def find_files(base_dir, extension):
     """
@@ -92,31 +148,46 @@ def find_files_fromsubfolder(base_dir, file_name_template, num_folders=6, start_
 
 def save_action_segments(segments, filename="action_segments.txt"):
     """
-    保存动作分割点到文件
+    Save the action segments to a text file in the format `start_frame,end_frame`.
+    Args:
+        segments (list): A list of tuples containing the start and end frame indices of each action segment.
+        filename (str): The name of the output text file.
     """
     with open(filename, "w") as f:
         for start, end in segments:
             f.write(f"{start},{end}\n")
-    print(f"动作分割信息已保存至 {filename}")
-
+    print(f"action splite information has saved in {filename}")
 
 def save_skeleton_segments(skeleton_frames, action_segments, folder_path="dataset"):
+    """
+    Save the skeleton segments to individual .npy files in the `skeleton_segments` directory.
+    Args:
+        skeleton_frames (np.ndarray): The full skeleton data, ndarray.
+        action_segments (list): A list of tuples containing the start and end frame indices of each action segment.
+        folder_path (str): The base directory path to save the skeleton segments.
+    """
 
-     # **创建 skeleton_segments 目录** 先不需要人工核对之后才需要
     skeleton_segments_dir = os.path.join(folder_path, "skeleton_segments")
     os.makedirs(skeleton_segments_dir, exist_ok=True)
 
-    # **存储动作分割的骨骼点，文件命名为 `action01.npy`, `action02.npy`...**
+    # save each action segment to a separate .npy file like action01.npy, action02.npy...
     for idx, (start, end) in enumerate(action_segments, start=1):
         segment_data = skeleton_frames[start:end + 1]
         segment_filename = os.path.join(skeleton_segments_dir, f"action{idx:02d}.npy")  # action01.npy, action02.npy...
         np.save(segment_filename, segment_data)
         
 def save_time_segments(timestamps, action_segments, folder_path="dataset"):
+    """
+    Save the timestamps of the action segments to individual .npy files in the `skeleton_segments` directory.
+    Args:
+        timestamps (np.ndarray): The full timestamps data, ndarray.
+        action_segments (list): A list of tuples containing the start and end frame indices of each action segment.
+        folder_path (str): The base directory path to save the time segments.
+    """
     skeleton_segments_dir = os.path.join(folder_path, "skeleton_segments")
     os.makedirs(skeleton_segments_dir, exist_ok=True)
 
-    # **存储动作分割的时间点，文件命名为 `timestamp01.npy`, `timestamp02.npy`...**
+    # save each action segment to a separate .npy file like timestamp01.npy, timestamp02.npy...
     for idx, (start, end) in enumerate(action_segments, start=1):
         segment_data = timestamps[start:end + 1]
         time_filename = os.path.join(skeleton_segments_dir, f"timestamp{idx:02d}.npy")  # action01.npy, action02.npy...
@@ -124,23 +195,20 @@ def save_time_segments(timestamps, action_segments, folder_path="dataset"):
 
 def plot_motion_energy(motion_energy, action_segments, threshold_T, long_stationary_segments, save_path="plots/motion_energy_plot.png"):
     """
-    绘制运动能量曲线并标注动作分割线，并将图像保存到指定路径。
-    
-    :param motion_energy: 每一帧的运动能量
-    :param action_segments: 分割后的动作段列表
-    :param threshold_T: 静止状态的阈值
-    :param long_stationary_segments: 长静止段的起始和结束帧索引列表
-    :param save_path: 保存图片的路径（默认为 "plots/motion_energy_plot.png"）
+    Plot the motion energy curve with action segments and long stationary segments.
+    Args:
+        motion_energy (np.ndarray): The motion energy values.
+        action_segments (list): A list of tuples containing the start and end frame indices of each action segment.
+        threshold_T (float): The threshold value for detecting motion.
+        long_stationary_segments (list): A list of tuples containing the start and end frame indices of each long stationary segment.
+        save_path (str): The path to save the plot.
     """
     plt.figure(figsize=(12, 6))
 
-    # 绘制运动能量曲线
     plt.plot(motion_energy, label="Motion Energy", color="blue")
 
-    # 绘制静止状态阈值线
     plt.axhline(y=threshold_T, color="red", linestyle="--", label="Threshold (T)")
 
-    # 标注动作分割线
     for segment in action_segments:
         start_frame = segment[0]
         end_frame = segment[-1]
@@ -155,22 +223,18 @@ def plot_motion_energy(motion_energy, action_segments, threshold_T, long_station
             label="Action Segment" if segment == action_segments[0] else "",
         )
 
-    # 标注长静止段
     for start, end in long_stationary_segments:
         plt.axvspan(start, end, color="gray", alpha=0.3, label="Long Stationary Segment" if start == long_stationary_segments[0][0] else "")
 
-    # 添加图例和标签
     plt.xlabel("Frame Index")
     plt.ylabel("Motion Energy")
     plt.title("Motion Energy and Action Segmentation")
     plt.legend()
 
-    # 确保保存目录存在
     os.makedirs(os.path.dirname(save_path), exist_ok=True)
 
-    # 保存图像
     plt.savefig(save_path, dpi=300)
-    print(f"运动能量图已保存至: {save_path}")
+    print(f"motion energy plot is saved in: {save_path}")
 
 
 

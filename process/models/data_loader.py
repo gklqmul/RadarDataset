@@ -78,7 +78,7 @@ class ActionDataset(Dataset):
 
         radar_data = np.array([self.pad_or_trim_points(self.scale_data(frame, 'radar')) for frame in radar_data])
 
-        skeleton_data = np.load(skeleton_path) / 1000.0
+        skeleton_data = np.load(skeleton_path)
         skeleton_data = self.scale_data(skeleton_data, 'skeleton')
 
         frame_count = min(len(radar_data), skeleton_data.shape[0])
