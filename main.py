@@ -5,8 +5,6 @@
 # transform each to radar coordinate
 
 
-import os
-import shutil
 from process.class_files.data_aligner import DataAligner
 from process.utils.ProcessAllMKV import process_all_mkv
 from process.utils.SaveMotionSplit import process_skeleton_file
@@ -16,28 +14,33 @@ from process.utils.reformatradardata import convert_mat_to_hdf5
 
 if __name__ == "__main__":
 
-    for participant_num in range(1, 27):
-        # transform to two digit string
-        currentParticipant = f"{participant_num:02d}"
-        for currentEnv in ["env1", "env2"]:
-            mkv_folder = "D:/kinect/data{currentParticipant}/".format(currentParticipant=currentParticipant)
-            mkv_flies = find_files(mkv_folder, ".mkv")
-            time_files = find_files(mkv_folder, ".npy") 
-            if not mkv_flies:
-                print("No valid `.mkv` files found!")
-            else:
-                process_all_mkv(mkv_flies, time_files,subjectNum=f"subject{currentParticipant}")
+    radar_files = get_aligned_mat_files(f"dataset/env1/subjects/subject01/origal")
+    convert_mat_to_hdf5(radar_files)
+    base_path = f"dataset/env1/subjects/subject01"
+    move_files_to_aligned(base_path)  # base_path = "dataset\\env1\\subjects\\subject05"
 
-            skeletonpointfolder = f"dataset/{currentEnv}/subjects/subject{currentParticipant}/origal"
-            # # Get all `.npy` files to process
-            skeleton_files = find_files_fromsubfolder(skeletonpointfolder, "body_skeleton.npy")
-            if not skeleton_files:
-                print("No valid `body_skeleton.npy` files found!")
-            else:
-                print(f"Found {len(skeleton_files)} files, starting processing...")
-                # Process each `.npy` file
-                for folder_path, skeleton_file in skeleton_files:
-                    process_skeleton_file(folder_path, skeleton_file)
+    # for participant_num in range(1, 27):
+    #     # transform to two digit string
+    #     currentParticipant = f"{participant_num:02d}"
+    #     for currentEnv in ["env1", "env2"]:
+    #         mkv_folder = "D:/kinect/data{currentParticipant}/".format(currentParticipant=currentParticipant)
+    #         mkv_flies = find_files(mkv_folder, ".mkv")
+    #         time_files = find_files(mkv_folder, ".npy") 
+    #         if not mkv_flies:
+    #             print("No valid `.mkv` files found!")
+    #         else:
+    #             process_all_mkv(mkv_flies, time_files,subjectNum=f"subject{currentParticipant}")
+
+    #         skeletonpointfolder = f"dataset/{currentEnv}/subjects/subject{currentParticipant}/origal"
+    #         # # Get all `.npy` files to process
+    #         skeleton_files = find_files_fromsubfolder(skeletonpointfolder, "body_skeleton.npy")
+    #         if not skeleton_files:
+    #             print("No valid `body_skeleton.npy` files found!")
+    #         else:
+    #             print(f"Found {len(skeleton_files)} files, starting processing...")
+    #             # Process each `.npy` file
+    #             for folder_path, skeleton_file in skeleton_files:
+    #                 process_skeleton_file(folder_path, skeleton_file)
 
     # before aligning data, make sure action_segments.txt has correct timestamps split
     # Data alignment and segmentation
