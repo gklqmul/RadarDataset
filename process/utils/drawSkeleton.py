@@ -6,7 +6,7 @@ import scipy.io as sio
 
 # Load skeleton data (format: frames x 32 x 3)
 skeleton_data = np.load("dataset/env1/subjects/subject26/origal/1/aligned/aligned_skeleton_segment01.npy")  # Path to your .npy file
-radar_data = sio.loadmat("dataset/env1/subjects/subject26/origal/1/aligned_radar_segment01.mat")
+radar_data = sio.loadmat("dataset/env1/subjects/subject26/origal/1/aligned/aligned_radar_segment01.mat")
 pc = radar_data["radar_data"]  # 888 frames, each with 12 attributes
 num_frames = skeleton_data.shape[0]  # Total number of frames
 
