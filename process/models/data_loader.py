@@ -5,11 +5,13 @@ from torch.utils.data import Dataset
 from sklearn.model_selection import train_test_split
 
 class ActionDataset(Dataset):
-    def __init__(self, root_dir, task='action_classification', padding_mode='zero', max_points=512, scale_factor=1.0, test_size=0.2, val_size=0.1, stack_func=None, normalize=False, standardize=False):
+    def __init__(self, root_dir, task='action_classification', padding_mode='zero',sampling_mode='random', max_points=32, max_frames=250, scale_factor=1.0, test_size=0.2, val_size=0.1, stack_func=None, normalize=False, standardize=False):
         self.root_dir = root_dir
         self.task = task
         self.padding_mode = padding_mode
+        self.sampling_mode = sampling_mode
         self.max_points = max_points
+        self.max_frames = max_frames
         self.scale_factor = scale_factor
         self.stack_func = stack_func
         self.normalize = normalize
@@ -39,6 +41,7 @@ class ActionDataset(Dataset):
                         radar_path = os.path.join(action_path, radar_file[0])
                         skeleton_path = os.path.join(action_path, skeleton_file[0])
                         self.data.append((radar_path, skeleton_path))
+        print(len(self.data))  # 看看是不是0
 
         train_data, test_data = train_test_split(self.data, test_size=test_size, random_state=42)
         train_data, val_data = train_test_split(train_data, test_size=val_size / (1 - test_size), random_state=42)
@@ -51,7 +54,7 @@ class ActionDataset(Dataset):
 
     def scale_data(self, data, data_type='radar'):
         if data_type == 'radar':
-            data = data * self.scale_factor
+            data = data * 1000
         elif self.normalize:
             data_min = np.min(data, axis=0)
             data_max = np.max(data, axis=0)
@@ -68,20 +71,23 @@ class ActionDataset(Dataset):
 
     def process_sample(self, radar_path, skeleton_path):
         with h5py.File(radar_path, 'r') as f:
-            radar_data = np.array(f['radar_data'])
+            frames_group = f['frames']
+            radar_data = []
 
-        radar_data = radar_data[:, :, [1, 3, 5, 6]]
-        radar_data = [frame.T for frame in radar_data]
+            for frame_name in frames_group:
+                frame_ds = frames_group[frame_name]
+                frame_array = np.array(frame_ds)
+                processed_frame = self.pad_or_trim_points(self.scale_data(frame_array, 'radar'))
+                processed_frame = processed_frame[:, [5, 6, 1, 3]]  # 选取四个维度
+                radar_data.append(processed_frame)  # 转置
 
-        if self.stack_func:
-            radar_data = self.stack_func(radar_data)
+        radar_data = np.array(radar_data)
+        radar_data = self.pad_or_trim_frames(radar_data)
 
-        radar_data = np.array([self.pad_or_trim_points(self.scale_data(frame, 'radar')) for frame in radar_data])
+        skeleton_data = np.load(skeleton_path)
+        skeleton_data = self.pad_or_trim_frames(skeleton_data)
 
-        skeleton_data = np.load(skeleton_path) / 1000.0
-        skeleton_data = self.scale_data(skeleton_data, 'skeleton')
-
-        frame_count = min(len(radar_data), skeleton_data.shape[0])
+        frame_count = min(len(radar_data), len(skeleton_data))
         radar_data = radar_data[:frame_count]
         skeleton_data = skeleton_data[:frame_count]
 
@@ -103,23 +109,55 @@ class ActionDataset(Dataset):
         return sample
 
     def pad_or_trim_points(self, frame):
-        num_points = frame.shape[0]
+        num_points, point_attributes = frame.shape
 
-        if num_points >= self.max_points:
-            return frame[:self.max_points]
+        if num_points < self.max_points:
+            if self.padding_mode == 'zero':
+                padding = np.zeros((self.max_points - num_points, point_attributes))
+            elif self.padding_mode == 'repeat':
+                if num_points == 0:
+                    raise ValueError("Cannot repeat last point from an empty frame.")
+                padding = np.tile(frame[-1:], (self.max_points - num_points, 1))
+            else:
+                raise ValueError(f"Unsupported padding mode: {self.padding_mode}")
+            return np.concatenate([frame, padding], axis=0)
 
-        if self.padding_mode == 'zero':
-            padding = np.zeros((self.max_points - num_points, frame.shape[1]))
-        elif self.padding_mode == 'repeat':
-            padding = np.tile(frame[-1:], (self.max_points - num_points, 1))
-        elif self.padding_mode == 'last_frame':
-            padding = np.repeat(frame[-1:], self.max_points - num_points, axis=0)
+        if num_points > self.max_points:
+            if self.sampling_mode == 'truncate':
+                return frame[:self.max_points]
+            elif self.sampling_mode == 'random':
+                indices = np.random.choice(num_points, self.max_points, replace=False)
+                return frame[indices]  
 
-        return np.concatenate([frame, padding], axis=0)
+        return frame 
+
+
+    def pad_or_trim_frames(self, data):
+        num_frames = data.shape[0]
+        if num_frames < self.max_frames:
+            if self.padding_mode == 'zero':
+                padding = np.zeros((self.max_frames - num_frames, *data.shape[1:]))
+            elif self.padding_mode == 'repeat':
+                if num_frames == 0:
+                    raise ValueError("Cannot repeat last frame from an empty sequence.")
+                padding = np.tile(data[-1:], (self.max_frames - num_frames, 1, 1))
+            else:
+                raise ValueError(f"Unsupported padding mode: {self.padding_mode}")
+            return np.concatenate([data, padding], axis=0)
+        return data[:self.max_frames]
 
 
 if __name__ == "__main__":
     dataset = ActionDataset(root_dir='dataset', task='action_classification', scale_factor=1.5)
     train_data = dataset.get_dataset('train')
+    val_data = dataset.get_dataset('val')
+    test_data = dataset.get_dataset('test')
     print(f"Training samples: {len(train_data)}")
-    print(f"Example sample: {train_data[0]}")
+    print(f"Validation samples: {len(val_data)}")
+    print(f"Testing samples: {len(test_data)}")
+    print(f"First radar frame shape: {train_data[0]['radar'].shape}")
+    print(f"First kinect frame first point: {train_data[0]['skeleton'].shape}")
+    print(f"First kinect frame first point: {train_data[0]['label']}")
+
+
+
