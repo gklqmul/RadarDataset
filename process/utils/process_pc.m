@@ -68,7 +68,7 @@ for j = 1:length(X)
     Y{j} = XYZ{j}(:,2) - M(2);
     Z{j} = XYZ{j}(:,3) - M(3);
     
-    X_body{j} = X{j}(IDX{j} == SELECT_INDEX1);
+    X_body{j} = X{j}(IDX{j} == SELECT_INDEX);
     Y_body{j} = Y{j}(IDX{j} == SELECT_INDEX);
     Z_body{j} = Z{j}(IDX{j} == SELECT_INDEX);
     
