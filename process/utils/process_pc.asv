@@ -49,7 +49,6 @@ MINPTS = 30;
 
 for j = 1: length(X)
     XYZ{j} = [X{j}', Y{j}', Z{j}'];
-
     IDX{j} = dbscan(XYZ{j}, EPSILON, MINPTS);
 end
 
@@ -65,32 +64,49 @@ end
 % Calculate mean for all combined frames
 M = mean(M, 1);
 
-% Normalise coordinates around mean and separate body from noise
+% Check correct clusters are selected
 for j = 1:length(X)
     X{j} = XYZ{j}(:,1) - M(1);
     Y{j} = XYZ{j}(:,2) - M(2);
     Z{j} = XYZ{j}(:,3) - M(3);
 
+    % Check that correct cluster is selected
     com = [];
     for k = 1:max(IDX{j})
         X_body{j} = X{j}(IDX{j} == k);
         Y_body{j} = Y{j}(IDX{j} == k);
         Z_body{j} = Z{j}(IDX{j} == k);
 
-        com(k) = norm(M, mean([X_body{j}, Y_body{j}, Z_body{j}], 1));
+        com(k) = norm(mean([X_body{j}, Y_body{j}, Z_body{j}], 1));
     end
+    [~,K(j)] = min(com);
+end
+
+% Repeat mean calculation using correct clusters
+M = [];
+for j = 1:length(XYZ)
+    M = [M; XYZ{j}(IDX{j} == K(j),:)];
+end
+M = mean(M, 1);
+
+% Normalise coordinates around mean and separate body from noise
+for j = 1:length(X)
+    X{j} = XYZ{j}(:,1) - M(1);
+    Y{j} = XYZ{j}(:,2) - M(2);
+    Z{j} = XYZ{j}(:,3) - M(3);
+
+    % Normalise to origin
+    X_body{j} = X{j}(IDX{j} == K(j));
+    Y_body{j} = Y{j}(IDX{j} == K(j));
+    Z_body{j} = Z{j}(IDX{j} == K(j));
     
-    X_body{j} = X{j}(IDX{j} == SELECT_INDEX);
-    Y_body{j} = Y{j}(IDX{j} == SELECT_INDEX);
-    Z_body{j} = Z{j}(IDX{j} == SELECT_INDEX);
-    
-    X_noise{j} = X{j}(IDX{j} ~= SELECT_INDEX);
-    Y_noise{j} = Y{j}(IDX{j} ~= SELECT_INDEX);
-    Z_noise{j} = Z{j}(IDX{j} ~= SELECT_INDEX);
+    X_noise{j} = X{j}(IDX{j} ~= K(j));
+    Y_noise{j} = Y{j}(IDX{j} ~= K(j));
+    Z_noise{j} = Z{j}(IDX{j} ~= K(j));
 end
 
 %% Plot
-j = 135;
+j = 1;
 Smag = 10;
 figure
 
@@ -108,23 +124,23 @@ xlim([-1 1])
 ylim([-1,1])
 zlim([-1 1])
 
-view([0,1,0])
+
 
 sT = title(sprintf("j = %d", j));
 
 pause(2)
-% 
-% for j = 2:length(X)
-%     s1.XData =X_body{j};
-%     s1.YData =Y_body{j};
-%     s1.ZData =Z_body{j};
-%     %s1.SizeData =S{j}(IDX{j}==1)./Smag;
-% 
-%     sn.XData =X_noise{j};
-%     sn.YData =Y_noise{j};
-%     sn.ZData =Z_noise{j};
-% 
-%     sT.String = sprintf("j = %d", j);
-% 
-%     pause(0.25)
-% end
+
+for j = 2:length(X)
+    s1.XData =X_body{j};
+    s1.YData =Y_body{j};
+    s1.ZData =Z_body{j};
+    %s1.SizeData =S{j}(IDX{j}==1)./Smag;
+
+    sn.XData =X_noise{j};
+    sn.YData =Y_noise{j};
+    sn.ZData =Z_noise{j};
+
+    sT.String = sprintf("j = %d", j);
+
+    pause(0.25)
+end

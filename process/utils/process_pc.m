@@ -49,7 +49,6 @@ MINPTS = 30;
 
 for j = 1: length(X)
     XYZ{j} = [X{j}', Y{j}', Z{j}'];
-
     IDX{j} = dbscan(XYZ{j}, EPSILON, MINPTS);
 end
 
@@ -125,7 +124,7 @@ xlim([-1 1])
 ylim([-1,1])
 zlim([-1 1])
 
-view([0,1,0])
+
 
 sT = title(sprintf("j = %d", j));
 
