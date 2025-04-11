@@ -1,4 +1,5 @@
 import numpy as np
+import scipy
 from sklearn.cluster import DBSCAN
 
 def clean_radar_data(radar_data, Ni=5, epsilon=1, minpts=30,
@@ -93,12 +94,7 @@ def clean_radar_data(radar_data, Ni=5, epsilon=1, minpts=30,
 
 # Example usage
 if __name__ == "__main__":
-    # Example radar data
-    radar_data = [
-        {'rng': np.random.rand(100), 'el': np.random.rand(100), 'az': np.random.rand(100), 'snr': np.random.rand(100)},
-        {'rng': np.random.rand(100), 'el': np.random.rand(100), 'az': np.random.rand(100), 'snr': np.random.rand(100)},
-        # Add more frames as needed
-    ]
+
 
     cleaned_data = clean_radar_data(radar_data)
     print("Cleaned Radar Data:")
