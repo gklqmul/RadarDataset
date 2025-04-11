@@ -3,9 +3,14 @@ import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
 import matplotlib.animation as animation
 import scipy.io as sio
+import matplotlib
 
+matplotlib.rcParams.update({
+        'font.family': 'serif',
+    'font.serif': ['Times New Roman'],
+})
 # Load skeleton data (format: frames x 32 x 3)
-skeleton_data = np.load("dataset/env1/subjects/subject26/origal/1/aligned/aligned_skeleton_segment01.npy")  # Path to your .npy file
+skeleton_data = np.load("dataset/env1/subjects/subject26/aligned/action01/aligned_skeleton_segment01.npy")  # Path to your .npy file
 radar_data = sio.loadmat("dataset/env1/subjects/subject26/origal/1/aligned/aligned_radar_segment01.mat")
 pc = radar_data["radar_data"]  # 888 frames, each with 12 attributes
 num_frames = skeleton_data.shape[0]  # Total number of frames
@@ -19,40 +24,87 @@ BONES = [
     (0, 22), (22, 23), (23, 24), (24, 25)  # Right leg
 ]
 
-frame_index = 23  # Select a frame for visualization
+frame_index = 26  # Select a frame for visualization
 joints = skeleton_data[frame_index]  # Shape: (32, 3)
+joints = joints / 1000
+joints[:, 1] = -joints[:, 1]  # 骨骼数据
 
 # Plot 3D skeleton
-fig = plt.figure(figsize=(8, 8))
+fig = plt.figure(figsize=(10, 8))  # 增加宽度比例
 ax = fig.add_subplot(111, projection='3d')
 
+# 关键修改：交换Y和Z轴数据
+joints_swapped = joints.copy()
+joints_swapped[:, 1], joints_swapped[:, 2] = joints[:, 2], joints[:, 1]
+
 # Draw skeleton connections
+# 绘制骨骼连线（增大关节点尺寸）
 for bone in BONES:
     joint1, joint2 = bone
-    xs = [joints[joint1, 0], joints[joint2, 0]]
-    ys = [joints[joint1, 1], joints[joint2, 1]]
-    zs = [joints[joint1, 2], joints[joint2, 2]]
-    ax.plot(xs, ys, zs, 'bo-', markersize=5, alpha=0.8)
+    xs = [joints_swapped[joint1, 0], joints_swapped[joint2, 0]]
+    ys = [joints_swapped[joint1, 1], joints_swapped[joint2, 1]]
+    zs = [joints_swapped[joint1, 2], joints_swapped[joint2, 2]]
+    
+    # 修改点线参数
+    ax.plot(xs, ys, zs,  
+            'o-',  # 移除'bo-'中的b，用统一颜色
+            color='#2E86AB',
+            markersize=10,  # 关节点从5增大到8
+            alpha=0.9,    # 提高不透明度
+            linewidth=4,  # 连线从2加粗到3
+            solid_capstyle='round',
+            markeredgecolor='white',  # 添加白色边缘
+            markeredgewidth=0.5)     # 边缘线宽
 
-# Extract radar data for the selected frame
-radar_frame_data = pc[0, frame_index]  # Radar data (888, 12, N, 3)
-x = (radar_frame_data[7].flatten()) * 1000  # X coordinates
-z = (radar_frame_data[8].flatten()) * 1000  # Z coordinates
-y = -(radar_frame_data[3].flatten()) * 1000  # Y coordinates
-print(y)
-ax.scatter(x, y, z, c='r', marker='o', s=10, alpha=0.5)  # Red points
+# 绘制雷达点（增大尺寸并增强对比）
+radar_frame_data = pc[0, frame_index]
+x = radar_frame_data[7].flatten()
+z = -radar_frame_data[3].flatten()
+y = radar_frame_data[8].flatten()
 
-# Set axis labels
-ax.set_xlabel("X")
-ax.set_ylabel("Y")
-ax.set_zlabel("Z")
-ax.set_xlim(-2000, 2000)  # X-axis range
-ax.set_ylim(-2000, 2000)  # Y-axis range
-ax.set_zlim(0, 5000)      # Z-axis range
-ax.set_title("3D Skeleton Visualization")
-ax.view_init(elev=10, azim=45)  # Adjust viewing angle
+ax.scatter(x, y, z, 
+           color='#F18F01', 
+           marker='o', 
+           s=50,  # 从20增大到40
+           alpha=0.8,  # 提高不透明度
+           edgecolors='white',
+           linewidth=0.8,  # 边缘线宽从0.3增加到0.8
+           label='Radar Points',
+           zorder=10)  # 确保雷达点在顶层
 
+# 坐标轴设置（保持不变）
+ax.set_xlabel("X (m)", labelpad=15, fontweight='bold')
+ax.set_ylabel("Z (m)", labelpad=15, fontweight='bold')
+ax.set_zlabel("Y (m)", labelpad=15, fontweight='bold')
+
+# 视角和比例（保持不变）
+ax.view_init(elev=20, azim=-45)
+ax.set_box_aspect([1, 1, 1])
+ax.set_xlim(-1.5, 1.5)
+ax.set_zlim(-1, 1)
+ax.set_ylim(1, 4)
+
+# 添加网格增强可读性
+ax.grid(True, linestyle='--', alpha=0.3)
+
+plt.tight_layout(pad=0)  # 去除多余留白
+
+# 3. 交互调整
+plt.ion()
 plt.show()
+input("调整好角度后按回车...")
+
+# 4. 保存最终视角
+plt.savefig(
+    'output.png',
+    dpi=300,                   # 印刷级分辨率
+    bbox_inches='tight',        # 去除白边
+    pad_inches=0,               # 零边距
+    facecolor='white',          # 确保背景白
+    transparent=True,          # 关闭透明
+)
+
+print(f"已保存！视角参数：elev={ax.elev:.1f}°, azim={ax.azim:.1f}°")
 
 # Animation setup
 # fig = plt.figure(figsize=(8, 8))

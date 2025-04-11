@@ -69,6 +69,7 @@
 
 # print('Motion energy calculation, filtering, and visualization completed.')
 
+## draw skeleton graph
 # import scipy.io as sio
 # import numpy as np
 # from scipy.signal import butter, filtfilt
@@ -159,66 +160,66 @@
 # file_path = "dataset/env1/subjects/subject02/aligned/action01/aligned_radar_segment01.h5"
 # display_point_attribute_names(file_path)
 
-# import numpy as np
-# import matplotlib.pyplot as plt
-# import seaborn as sns
+import numpy as np
+import matplotlib.pyplot as plt
+import seaborn as sns
 
-# # 读取txt文件
-# confusion_matrix = np.loadtxt("confusion.txt", dtype=int)
+# 读取txt文件
+confusion_matrix = np.loadtxt("confusion.txt", dtype=int)
 
-# # 确保矩阵尺寸正确
-# assert confusion_matrix.shape == (22, 22), f"Matrix shape is {confusion_matrix.shape}, expected (22,22)"
+# 确保矩阵尺寸正确
+assert confusion_matrix.shape == (26, 26), f"Matrix shape is {confusion_matrix.shape}, expected (22,22)"
 
-# # 画出混淆矩阵
-# plt.figure(figsize=(10, 8))
-# sns.heatmap(confusion_matrix, annot=True, fmt="d", cmap="Blues", linewidths=0.5)
+# 画出混淆矩阵
+plt.figure(figsize=(10, 8))
+sns.heatmap(confusion_matrix, annot=True, fmt="d", cmap="Blues", linewidths=0.5)
 
-# # 设置标签
-# plt.xlabel("Predicted Label")
-# plt.ylabel("True Label")
-# plt.title("Confusion Matrix")
-# plt.show()
+# 设置标签
+plt.xlabel("Predicted Label")
+plt.ylabel("True Label")
+plt.title("Confusion Matrix")
+plt.show()
 
-import os
-import shutil
-import glob
+# import os
+# import shutil
+# import glob
 
-# 设置根目录
-root_dir = r"dataset/env2/subjects"
+# # 设置根目录
+# root_dir = r"dataset/env2/subjects"
 
-# 遍历所有 subject 目录
-for subject_path in glob.glob(os.path.join(root_dir, "subject*")):
-    aligned_path = os.path.join(subject_path, "aligned")
+# # 遍历所有 subject 目录
+# for subject_path in glob.glob(os.path.join(root_dir, "subject*")):
+#     aligned_path = os.path.join(subject_path, "aligned")
     
-    # 确保 aligned 目录存在
-    if not os.path.exists(aligned_path):
-        continue
+#     # 确保 aligned 目录存在
+#     if not os.path.exists(aligned_path):
+#         continue
 
-    # **步骤 1：移动 action09 到 subject 目录下**
-    action09_path = os.path.join(aligned_path, "action09")
-    new_action09_path = os.path.join(subject_path, "action09")
+#     # **步骤 1：移动 action09 到 subject 目录下**
+#     action09_path = os.path.join(aligned_path, "action09")
+#     new_action09_path = os.path.join(subject_path, "action09")
 
-    if os.path.exists(action09_path):
-        if os.path.exists(new_action09_path):
-            print(f"目标位置已存在 {new_action09_path}，跳过移动")
-        else:
-            shutil.move(action09_path, new_action09_path)
-            print(f"已移动 {action09_path} -> {new_action09_path}")
+#     if os.path.exists(action09_path):
+#         if os.path.exists(new_action09_path):
+#             print(f"目标位置已存在 {new_action09_path}，跳过移动")
+#         else:
+#             shutil.move(action09_path, new_action09_path)
+#             print(f"已移动 {action09_path} -> {new_action09_path}")
 
-    # **步骤 3：重新排序 action* 目录**
-    action_dirs = sorted(
-        glob.glob(os.path.join(aligned_path, "action*")),
-        key=lambda x: int(os.path.basename(x).replace("action", ""))  # 按照数字排序
-    )
+#     # **步骤 3：重新排序 action* 目录**
+#     action_dirs = sorted(
+#         glob.glob(os.path.join(aligned_path, "action*")),
+#         key=lambda x: int(os.path.basename(x).replace("action", ""))  # 按照数字排序
+#     )
 
-    # 重新编号 action01, action02, ...
-    for i, old_path in enumerate(action_dirs, start=1):
-        new_name = f"action{i:02d}"
-        new_path = os.path.join(aligned_path, new_name)
+#     # 重新编号 action01, action02, ...
+#     for i, old_path in enumerate(action_dirs, start=1):
+#         new_name = f"action{i:02d}"
+#         new_path = os.path.join(aligned_path, new_name)
 
-        if old_path != new_path:  # 避免重命名自己
-            os.rename(old_path, new_path)
-            print(f"已重命名 {old_path} -> {new_path}")
+#         if old_path != new_path:  # 避免重命名自己
+#             os.rename(old_path, new_path)
+#             print(f"已重命名 {old_path} -> {new_path}")
 
-print("整理完成！")
+# print("整理完成！")
 
