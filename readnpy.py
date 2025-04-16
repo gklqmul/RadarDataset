@@ -36,12 +36,4 @@ with h5py.File(file_path, 'r') as h5_file:
     else:
         print("\n文件无全局属性")
 
-    with h5py.File(file_path, 'r') as h5_file:
-    # 检查frame_attributes
-        if 'frame_attributes' in h5_file:
-            print("="*50)
-            print("frame_attributes 内容:")
-            frame_attrs = h5_file['frame_attributes']
-            frame_attrs.visititems(print_attributes)  # 递归查看所有内容
-        else:
-            print("文件中没有 frame_attributes")
+    

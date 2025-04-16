@@ -66,9 +66,9 @@ M = mean(M, 1);
 
 % Check correct clusters are selected
 for j = 1:length(X)
-    X{j} = XYZ{j}(:,1) - M(1);
-    Y{j} = XYZ{j}(:,2) - M(2);
-    Z{j} = XYZ{j}(:,3) - M(3);
+    X{j} = XYZ{j}(:,1);
+    Y{j} = XYZ{j}(:,2);
+    Z{j} = XYZ{j}(:,3);
 
     % Check that correct cluster is selected
     com = [];
@@ -91,9 +91,9 @@ M = mean(M, 1);
 
 % Normalise coordinates around mean and separate body from noise
 for j = 1:length(X)
-    X{j} = XYZ{j}(:,1) - M(1);
-    Y{j} = XYZ{j}(:,2) - M(2);
-    Z{j} = XYZ{j}(:,3) - M(3);
+    X{j} = XYZ{j}(:,1);
+    Y{j} = XYZ{j}(:,2);
+    Z{j} = XYZ{j}(:,3);
 
     % Normalise to origin
     X_body{j} = X{j}(IDX{j} == K(j));
@@ -110,7 +110,7 @@ j = 1;
 Smag = 10;
 figure
 
-%s1 = scatter3(X{j}, Y{j}, Z{j}, S{j}./Smag, '.');
+% s1 = scatter3(X{j}, Y{j}, Z{j}, S{j}./Smag, '.');
 %s1 = scatter3(X_body{j}, X_body{j}, X_body{j}, S{j}(IDX{j}==1)./Smag, 'r.');
 s1 = scatter3(X_body{j}, Y_body{j}, Z_body{j}, 'r.');
 hold on
@@ -120,9 +120,9 @@ xlabel('X')
 ylabel('Y')
 zlabel('Z')
 
-xlim([-1 1])
-ylim([-1,1])
-zlim([-1 1])
+xlim([-2 2])
+ylim([0,4])
+zlim([-2, 2])
 
 
 

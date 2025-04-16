@@ -4,6 +4,7 @@ import numpy as np
 import json
 from pathlib import Path
 
+
 def convert_mat_to_hdf5(mat_file_list):
     """
     Converts multiple .mat files with radar_data into individual HDF5 files,
@@ -26,7 +27,7 @@ def convert_mat_to_hdf5(mat_file_list):
 
             # Generate the output HDF5 file path
             mat_file_path = Path(mat_file_path)
-            hdf5_output_path = mat_file_path.with_suffix(".h5")  # Replace .mat with .h5
+            hdf5_output_path = mat_file_path.with_suffix(".h5")
 
             # Create the HDF5 file
             with h5py.File(hdf5_output_path, "w") as h5f:
@@ -67,3 +68,4 @@ def convert_mat_to_hdf5(mat_file_list):
             continue
 
     print("Conversion complete.")
+
